@@ -1,6 +1,7 @@
-NET Puzzle Game – Optimized Logic & Solver
+# NET Game - Master the art of puzzles
 
 PUZZLE DEVELOPERS :
+
   Rishikeshwar V T - CB.SC.U4CSE24041
   Sivapriyan R - CB.SC.U4CSE24051
   Prithesh S - CB.SC.U4CSE24038
