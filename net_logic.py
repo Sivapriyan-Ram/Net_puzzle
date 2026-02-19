@@ -223,82 +223,7 @@ class NetGameLogic:
         self.greedy_animation_index = 0
         self.greedy_step_count = 0
 
-   """ # ========== OPTIMIZED GREEDY SOLVER O(W×H) ==========
-    def greedy_solve_full(self, start_grid):
-        """
-        """OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
-        
-        ALGORITHM DESIGN:
-        - Greedy choice: shortest rotation (CW/CCW) per mismatched tile
-        - Single pass: visit each tile EXACTLY ONCE
-        - Precompute 4 rotations per tile in O(1)
-        - No redundant scans, no grids_equal() calls
-        
-        Speedup vs original: ~500x on 7×7 grids
-        
-        Returns: List of moves [(x, y, 'cw'|'ccw')]"""
-        """
-        grid = self.clone_grid(start_grid)
-        candidates = []
-        
-        # Phase 1: Score ALL mismatched tiles by brokenness
-        for y in range(self.height):
-            for x in range(self.width):
-                current = grid[y][x]
-                target = self.solution[y][x]
-                if current == target:
-                    continue
-                
-                # Brokenness = min rotations needed (0-3, higher = more broken)
-                rotations = [current]
-                for _ in range(3):
-                    rotations.append(self.rotate_direction(rotations[-1]))
-                
-                min_rot = 4
-                for i, rotated in enumerate(rotations):
-                    if rotated == target:
-                        min_rot = i
-                        break
-                
-                # Store (brokenness, x, y, direction_needed)
-                candidates.append((min_rot, x, y))
-        
-        # Phase 2: Sort by MOST BROKEN FIRST (descending brokenness)
-        for i in range(1, len(candidates)):
-            key = candidates[i]
-            j = i - 1
-            while j >= 0 and candidates[j][0] < key[0]:  # Descending: higher brokenness first
-                candidates[j + 1] = candidates[j]
-                j -= 1
-            candidates[j + 1] = key
-        
-        moves = []
-        for brokenness, x, y in candidates:
-            current = grid[y][x]
-            target = self.solution[y][x]
-            
-            # Same greedy choice: shortest rotation
-            rotations = [current]
-            for _ in range(3):
-                rotations.append(self.rotate_direction(rotations[-1]))
-            
-            min_rot = 4
-            for i, rotated in enumerate(rotations):
-                if rotated == target:
-                    min_rot = i
-                    break
-            
-            # Apply shortest rotation
-            if min_rot <= 2:  # CW
-                for _ in range(min_rot):
-                    grid[y][x] = self.rotate_direction(grid[y][x])
-                    moves.append((x, y, 'cw'))
-            else:  # CCW
-                for _ in range(4 - min_rot):
-                    grid[y][x] = self.rotate_direction_ccw(grid[y][x])
-                    moves.append((x, y, 'ccw'))
-        
-        return moves"""
+   
 
     def solve_with_tree_dp(self,start_grid):
         # Phase 1: Build adjacency from solution
@@ -478,6 +403,83 @@ class NetGameLogic:
                         stack.append((nx, ny))
         return connected
 
+    """ 
+    # ========== OPTIMIZED GREEDY SOLVER O(W×H) ==========
+    def greedy_solve_full(self, start_grid):
+        """
+        """OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
+        
+        ALGORITHM DESIGN:
+        - Greedy choice: shortest rotation (CW/CCW) per mismatched tile
+        - Single pass: visit each tile EXACTLY ONCE
+        - Precompute 4 rotations per tile in O(1)
+        - No redundant scans, no grids_equal() calls
+        
+        Speedup vs original: ~500x on 7×7 grids
+        
+        Returns: List of moves [(x, y, 'cw'|'ccw')]"""
+        """
+        grid = self.clone_grid(start_grid)
+        candidates = []
+        
+        # Phase 1: Score ALL mismatched tiles by brokenness
+        for y in range(self.height):
+            for x in range(self.width):
+                current = grid[y][x]
+                target = self.solution[y][x]
+                if current == target:
+                    continue
+                
+                # Brokenness = min rotations needed (0-3, higher = more broken)
+                rotations = [current]
+                for _ in range(3):
+                    rotations.append(self.rotate_direction(rotations[-1]))
+                
+                min_rot = 4
+                for i, rotated in enumerate(rotations):
+                    if rotated == target:
+                        min_rot = i
+                        break
+                
+                # Store (brokenness, x, y, direction_needed)
+                candidates.append((min_rot, x, y))
+        
+        # Phase 2: Sort by MOST BROKEN FIRST (descending brokenness)
+        for i in range(1, len(candidates)):
+            key = candidates[i]
+            j = i - 1
+            while j >= 0 and candidates[j][0] < key[0]:  # Descending: higher brokenness first
+                candidates[j + 1] = candidates[j]
+                j -= 1
+            candidates[j + 1] = key
+        
+        moves = []
+        for brokenness, x, y in candidates:
+            current = grid[y][x]
+            target = self.solution[y][x]
+            
+            # Same greedy choice: shortest rotation
+            rotations = [current]
+            for _ in range(3):
+                rotations.append(self.rotate_direction(rotations[-1]))
+            
+            min_rot = 4
+            for i, rotated in enumerate(rotations):
+                if rotated == target:
+                    min_rot = i
+                    break
+            
+            # Apply shortest rotation
+            if min_rot <= 2:  # CW
+                for _ in range(min_rot):
+                    grid[y][x] = self.rotate_direction(grid[y][x])
+                    moves.append((x, y, 'cw'))
+            else:  # CCW
+                for _ in range(4 - min_rot):
+                    grid[y][x] = self.rotate_direction_ccw(grid[y][x])
+                    moves.append((x, y, 'ccw'))
+        
+        return moves"""
 
 
 
