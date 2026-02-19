@@ -406,8 +406,8 @@ class NetGameLogic:
     """ 
     # ========== OPTIMIZED GREEDY SOLVER O(W×H) ==========
     def greedy_solve_full(self, start_grid):
-        """
-        """OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
+        
+        OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
         
         ALGORITHM DESIGN:
         - Greedy choice: shortest rotation (CW/CCW) per mismatched tile
@@ -417,8 +417,8 @@ class NetGameLogic:
         
         Speedup vs original: ~500x on 7×7 grids
         
-        Returns: List of moves [(x, y, 'cw'|'ccw')]"""
-        """
+        Returns: List of moves [(x, y, 'cw'|'ccw')]
+        
         grid = self.clone_grid(start_grid)
         candidates = []
         
@@ -480,6 +480,7 @@ class NetGameLogic:
                     moves.append((x, y, 'ccw'))
         
         return moves"""
+
 
 
 
