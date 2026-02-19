@@ -299,6 +299,7 @@ class NetGameLogic:
                     moves.append((x, y, 'ccw'))
         
         return moves"""
+
     def solve_with_tree_dp(self,start_grid):
         # Phase 1: Build adjacency from solution
         adj = {(x, y): [] for y in range(self.height) for x in range(self.width)}
@@ -365,6 +366,42 @@ class NetGameLogic:
         #Trigger recursion from root
         solve_subtree(root,None)
 
+        # Reconstruct moves (including direction choice)
+        moves = []
+
+        def collect_moves(node, parent):
+            _, rot_cw = solve_subtree(node, parent)
+            x, y = node
+            current = start_grid[y][x]
+            target = self.solution[y][x]
+
+            # Determine actual direction to apply minimal rotations
+            if current != target:
+                # Find minimal rotations (clockwise vs counter‑clockwise)
+                cw = current
+                cw_cnt = 0
+                while cw != target and cw_cnt < 4:
+                    cw = self.rotate_direction(cw)
+                    cw_cnt += 1
+                ccw = current
+                ccw_cnt = 0
+                while ccw != target and ccw_cnt < 4:
+                    ccw = self.rotate_direction_ccw(ccw)
+                    ccw_cnt += 1
+                if cw_cnt <= ccw_cnt:
+                    direction = 'cw'
+                    rotations = cw_cnt
+                else:
+                    direction = 'ccw'
+                    rotations = ccw_cnt
+                moves.extend([(x, y, direction)] * rotations)
+
+            for child in adj[node]:
+                if child != parent:
+                    collect_moves(child, node)
+
+        collect_moves(root, None)
+        return moves
         
     
     def rotate_direction(self, direction: Direction) -> Direction:
@@ -432,6 +469,7 @@ class NetGameLogic:
                         connected.add((nx, ny))
                         stack.append((nx, ny))
         return connected
+
 
 
 
