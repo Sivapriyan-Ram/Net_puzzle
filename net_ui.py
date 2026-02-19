@@ -130,7 +130,7 @@ class NetGameUI:
 
         self.greedy_label = tk.Label(
             status_frame,
-            text="Greedy steps: 0/0",
+            text="DC steps: 0/0",
             font=('Arial', 11, 'bold'),
             bg='#09c3f2',
             fg="#000000"
@@ -169,7 +169,7 @@ class NetGameUI:
         self.canvas.config(width=self.logic.width * self.cell_size,
                            height=self.logic.height * self.cell_size)
         self.user_label.config(text=f"User steps: {self.logic.user_move_count}")
-        self.greedy_label.config(text="Greedy steps: 0/0")
+        self.greedy_label.config(text="DC steps: 0/0")
         self.update_display()
 
     def new_game(self) -> None:
@@ -179,7 +179,7 @@ class NetGameUI:
         self.stop_solve_step()
         self.logic.new_game()
         self.user_label.config(text=f"User steps: {self.logic.user_move_count}")
-        self.greedy_label.config(text="Greedy steps: 0/0")
+        self.greedy_label.config(text="DC steps: 0/0")
         self.update_display()
 
     def restart_game(self) -> None:
@@ -189,7 +189,7 @@ class NetGameUI:
         self.stop_solve_step()
         self.logic.restart_game()
         self.user_label.config(text=f"User steps: {self.logic.user_move_count}")
-        self.greedy_label.config(text="Greedy steps: 0/0")
+        self.greedy_label.config(text="DC steps: 0/0")
         self.update_display()
 
     # ------------------------------------------------------------------
@@ -207,7 +207,7 @@ class NetGameUI:
         self.greedy_solution_moves = moves
         self.greedy_step_count = len(moves)
         self.greedy_animation_index = 0
-        self.greedy_label.config(text=f"Greedy steps: 0/{self.greedy_step_count}")
+        self.greedy_label.config(text=f"DC steps: 0/{self.greedy_step_count}")
 
         if self.greedy_step_count == 0:
             return
@@ -442,3 +442,4 @@ if __name__ == '__main__':
     root = tk.Tk()
     game = NetGameUI(root, width=7, height=7)
     root.mainloop()
+
