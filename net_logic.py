@@ -223,10 +223,10 @@ class NetGameLogic:
         self.greedy_animation_index = 0
         self.greedy_step_count = 0
 
-    # ========== OPTIMIZED GREEDY SOLVER O(W×H) ==========
+   """ # ========== OPTIMIZED GREEDY SOLVER O(W×H) ==========
     def greedy_solve_full(self, start_grid):
         """
-        OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
+        """OPTIMIZED GREEDY HILL-CLIMBING SOLVER - O(W×H)
         
         ALGORITHM DESIGN:
         - Greedy choice: shortest rotation (CW/CCW) per mismatched tile
@@ -236,7 +236,7 @@ class NetGameLogic:
         
         Speedup vs original: ~500x on 7×7 grids
         
-        Returns: List of moves [(x, y, 'cw'|'ccw')]
+        Returns: List of moves [(x, y, 'cw'|'ccw')]"""
         """
         grid = self.clone_grid(start_grid)
         candidates = []
@@ -298,7 +298,28 @@ class NetGameLogic:
                     grid[y][x] = self.rotate_direction_ccw(grid[y][x])
                     moves.append((x, y, 'ccw'))
         
-        return moves
+        return moves"""
+    def solve_with_tree_dp(self,start_grid):
+        # Phase 1: Build adjacency from solution
+        adj = {(x, y): [] for y in range(self.height) for x in range(self.width)}
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.solution[y][x] == Direction.NONE:
+                    continue
+
+                for dx, dy, d, o in [
+                    (0, -1, Direction.UP, Direction.DOWN),
+                    (1, 0, Direction.RIGHT, Direction.LEFT),
+                    (0, 1, Direction.DOWN, Direction.UP),
+                    (-1, 0, Direction.LEFT, Direction.RIGHT)
+                ]:
+                    if self.solution[y][x] & d:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < self.width and 0 <= ny < self.height:
+                            adj[(x, y)].append((nx, ny))
+
+
     
     def rotate_direction(self, direction: Direction) -> Direction:
         """O(1) 90° clockwise rotation."""
@@ -365,3 +386,4 @@ class NetGameLogic:
                         connected.add((nx, ny))
                         stack.append((nx, ny))
         return connected
+
