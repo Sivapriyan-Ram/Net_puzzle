@@ -319,6 +319,9 @@ class NetGameLogic:
                         if 0 <= nx < self.width and 0 <= ny < self.height:
                             adj[(x, y)].append((nx, ny))
 
+        
+        root = self.server_pos
+        
         @lru_cache(None)
         def solve_subtree(node, parent):
             x, y = node
@@ -359,6 +362,10 @@ class NetGameLogic:
 
             return best_cost, best_rotation
             
+        #Trigger recursion from root
+        solve_subtree(root,None)
+
+        
     
     def rotate_direction(self, direction: Direction) -> Direction:
         """O(1) 90° clockwise rotation."""
@@ -425,6 +432,7 @@ class NetGameLogic:
                         connected.add((nx, ny))
                         stack.append((nx, ny))
         return connected
+
 
 
 
