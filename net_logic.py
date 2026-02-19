@@ -403,7 +403,15 @@ class NetGameLogic:
         collect_moves(root, None)
         return moves
         
-    
+    # ========== WRAPPER FOR UI COMPATIBILITY ==========
+    def greedy_solve_full(self, start_grid):
+        """
+        Wrapper that calls the true divide‑and‑conquer solver.
+        Kept for UI compatibility (the UI calls this name).
+        """
+        return self.solve_with_tree_dp(start_grid)
+        
+
     def rotate_direction(self, direction: Direction) -> Direction:
         """O(1) 90° clockwise rotation."""
         result = Direction.NONE
@@ -469,6 +477,7 @@ class NetGameLogic:
                         connected.add((nx, ny))
                         stack.append((nx, ny))
         return connected
+
 
 
 
