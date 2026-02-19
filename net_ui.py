@@ -237,7 +237,7 @@ class NetGameUI:
 
         self.greedy_step_count = len(moves)
         self.greedy_label.config(
-            text=f"Greedy steps: {self.greedy_step_count}/{self.greedy_step_count}"
+            text=f"DC steps: {self.greedy_step_count}/{self.greedy_step_count}"
         )
         self.update_display()
 
@@ -442,4 +442,5 @@ if __name__ == '__main__':
     root = tk.Tk()
     game = NetGameUI(root, width=7, height=7)
     root.mainloop()
+
 
