@@ -325,28 +325,40 @@ class NetGameLogic:
             current = start_grid[y][x]
             target = self.solution[y][x]
 
+            rotations = []
+            state = current
+            for i in range(4):
+                rotations.append((state, i))  # (rotated_state, clockwise_rotations)
+                state = self.rotate_direction(state)
+
             best_cost = float('inf')
             best_rotation = 0
+            
+            for state, rot_cw in rotations:
+                if state != target:
+                    continue
 
-            state = current
-            for rot in range(4):
-                if state == target:
-                    rot_ccw = (4 - rot) % 4
-                    tile_cost = min(rot, rot_ccw)
-        
-                    total = tile_cost
-                    for child in adj[node]:
-                        if child != parent:
-                            child_cost, _ = solve_subtree(child, node)
-                            total += child_cost
-        
-                    if total < best_cost:
-                        best_cost = total
-                        best_rotation = rot
-        
-                state = self.rotate_direction(state)
-        
+                # cost for this tile is minimal rotations (clockwise or counter‑clockwise)
+                # we have rot_cw (0-3). Counter‑clockwise rotations = (4 - rot_cw) % 4.
+                rot_ccw = (4 - rot_cw) % 4
+                tile_cost = min(rot_cw, rot_ccw)
+
+                total = tile_cost
+
+                # Divide: solve each child subtree
+                for child in adj[node]:
+                    if child == parent:
+                        continue
+                    child_cost, _ = solve_subtree(child, node)
+                    total += child_cost
+
+                # Conquer: choose minimal total cost
+                if total < best_cost:
+                    best_cost = total
+                    best_rotation = rot_cw  # store clockwise count; we'll decide direction later
+
             return best_cost, best_rotation
+            
     
     def rotate_direction(self, direction: Direction) -> Direction:
         """O(1) 90° clockwise rotation."""
@@ -413,5 +425,6 @@ class NetGameLogic:
                         connected.add((nx, ny))
                         stack.append((nx, ny))
         return connected
+
 
 
