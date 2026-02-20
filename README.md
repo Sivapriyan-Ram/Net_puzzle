@@ -7,174 +7,238 @@ PUZZLE DEVELOPERS :
   Prithesh S - CB.SC.U4CSE24038
   Rakesh Khanna G - CB.SC.U4CSE24014
 
-This repository contains the complete backend logic for a NET (pipe connection) puzzle game.
-The project focuses on efficient puzzle generation, bitmask-based grid representation, and a high-performance greedy solver with O(W × H) time complexity.
+# 🧩 NET Puzzle Game
 
-The UI is also included; this code is designed to be plugged into the given ui.
+A professional, fully playable **network-connection puzzle game** built with **Python** and **Tkinter**, featuring:
 
-Table of Contents:
-  Project Overview
-  Features
-  Technologies Used
-  Grid Representation
-  Game Components
-  Puzzle Generation Algorithm
-  Greedy Solver Algorithm
-  Rotation Logic
-  Restart & Replay Support
-  Connected Component Detection
-  Time & Space Complexity
-  How to Run / Use
-  Use Cases
+* 🎲 Procedural puzzle generation
+* 🔄 Interactive tile rotation
+* 🤖 Optimal auto-solver using **Tree Dynamic Programming**
+* 🎞 Step-by-step animated solving
+* 📊 Real-time connectivity tracking
 
-Project Overview:
+---
 
-The NET puzzle requires players to rotate tiles so that all pipes connect correctly to a central server without forming loops.
-This implementation guarantees:
+## 🎮 Game Preview
 
-A single connected solution
-No cycles (tree structure)
-Fast automatic solving
-Identical puzzle state on restart
+![WhatsApp Image 2026-02-20 at 10 54 32 AM](https://github.com/user-attachments/assets/ebd00478-31a0-44fa-b387-c5e3c8102ffc)
 
-Features:
+---
 
-DFS-based puzzle generation
-Guaranteed solvable puzzles
-No loop formation
-Bitmask representation for connections
-Optimized greedy solver (single pass)
-Dynamic grid sizing
-Restart with same scrambled puzzle
-Exact move sequence generation
+# ✨ Features
 
-Technologies Used:
+* ✅ Procedurally generated tree-based puzzles
+* ✅ Guaranteed solvable boards
+* ✅ Bitwise tile encoding using `IntFlag`
+* ✅ Optimal solver (minimum rotation cost)
+* ✅ Animated solution playback
+* ✅ Multiple difficulty levels (5×5 to 11×11)
+* ✅ Clean separation of logic and UI
 
-Python 3
-Enum (IntFlag) for bitmask operations
-Depth-First Search (DFS)
-Greedy (hill-climbing) algorithm
+---
 
-Grid Representation:
+# 🧠 How It Works
 
-Each tile stores its pipe connections using bitwise flags:
+## 🔧 Puzzle Generation
 
-Direction	Bit Value
-UP	1
-RIGHT	2
-DOWN	4
-LEFT	8
+1. A **server node** is placed at the center.
+2. A randomized DFS-like expansion generates a **tree structure**.
+3. Each tile becomes:
 
-Example:
+   * `SERVER`
+   * `ENDPOINT` (1 connection)
+   * `JUNCTION` (2+ connections)
+4. The solution is stored.
+5. Tiles are randomly rotated to scramble the board.
 
-UP | RIGHT
+Because the network is a **tree**, the puzzle:
 
+* Has no cycles
+* Is always connected in the solution
+* Is guaranteed solvable
 
-This represents a tile connected to the top and right.
-This approach acts as an implicit adjacency list, making the grid memory-efficient.
+---
 
-Game Components:
-Direction (Enum)
-Defines pipe directions using bitmasks.
-TileType
+## 🔁 Tile Representation
 
-Identifies logical roles:
+Each tile uses bitwise directional flags:
 
-SERVER
-ENDPOINT
-JUNCTION
-BLANK
-NetGameLogic (Main Class)
+```python
+class Direction(IntFlag):
+    NONE = 0
+    UP = 1
+    RIGHT = 2
+    DOWN = 4
+    LEFT = 8
+```
 
-Handles:
+This allows:
 
-Grid creation
-Puzzle generation
-Scrambling
-Solving
-Player moves
-Win checking
+* Efficient rotation
+* Fast connectivity checks
+* Compact state storage
 
-Puzzle Generation Algorithm
+---
 
-Place the server tile at the grid center
-Create 2–3 initial connections
-Expand the grid using DFS
+## 🤖 Solver – Tree Dynamic Programming
 
-Ensure:
+The solver:
 
-All tiles are connected
-No cycles are formed
-Save the grid as the solution
-Randomly rotate tiles (except server) to scramble
-Time Complexity: O(W × H)
+* Reconstructs adjacency from the solution tree
+* Recursively computes optimal rotations per subtree
+* Uses `lru_cache` for memoization
+* Minimizes total rotation cost
 
-Greedy Solver Algorithm
+It returns a move sequence like:
 
-The solver is a single-pass greedy algorithm:
-Compare each tile with the solution
-Calculate minimum rotations required (0–3)
-Rank tiles by how “broken” they are
-Fix the most broken tiles first
-Rotate using the shortest direction (CW / CCW)
-Solver output format:
+```python
+[(x, y, "cw"), (x, y, "ccw"), ...]
+```
 
-(x, y, 'cw')
-(x, y, 'ccw')
+### Why Tree-DP?
 
+Since the generated puzzle is a **tree**, each subtree can be solved independently, enabling:
 
-Time Complexity: O(W × H)
-Performance: ~500× faster than naive solvers
+* Optimal minimal-rotation solutions
+* Efficient solving even on larger grids
+* Clean recursive structure
 
-Rotation Logic:
+---
 
-Clockwise rotation: 90°
-Counter-clockwise rotation: 90°
-Bitwise transformation
-Constant time per rotation
-Restart & Replay Support
-Restores the initial scrambled grid
+# 🖥️ User Interface
 
-Ensures:
+Built with **Tkinter Canvas**, featuring:
 
-Fair user vs solver comparison
-Same puzzle after restart
-Move counters reset correctly
-Connected Component Detection
-Uses DFS traversal from the server tile to find all connected cells.
+| Action      | Behavior                 |
+| ----------- | ------------------------ |
+| Left Click  | Rotate clockwise         |
+| Right Click | Rotate counter-clockwise |
+| New Game    | Generate new puzzle      |
+| Restart     | Reset to scrambled state |
+| Solve Now   | Instantly solve          |
+| Start Solve | Animated solve           |
+| Stop Solve  | Stop animation           |
 
-Used for:
+---
 
-Connectivity validation
-Visual highlighting
-Win condition checks
-Time Complexity: O(W × H)
+# 🎚 Difficulty Levels
 
-Time & Space Complexity Summary
-Operation	Complexity
-Puzzle Generation	O(W × H)
-Greedy Solver	O(W × H)
-Rotation	O(1)
-Win Check	O(W × H)
-DFS Traversal	O(W × H)
-How to Run / Use
-from net_game_logic import NetGameLogic
+Selectable grid sizes:
 
-game = NetGameLogic(7, 7)
-moves = game.greedy_solve_full(game.grid)
+* 5×5
+* 7×7 (default)
+* 9×9
+* 11×11
 
+Larger grids:
 
-You can integrate this logic with:
+* Smaller cell sizes
+* More complex branching
+* Longer optimal solution paths
 
-Pygame
-Tkinter
-Web UI (Canvas / React)
-Any custom GUI
+---
 
-Use Cases:
+# 📊 Game Status Indicators
 
-College mini / major projects
-Algorithm demonstrations
-Puzzle game development
-Greedy algorithm study
-Graph traversal learning
+* **Active:** Connected tiles / Total tiles
+* **User Steps:** Player move count
+* **DC Steps:** Solver step count
+
+Connected tiles are visually highlighted.
+
+---
+
+# 📂 Project Structure
+
+```
+.
+├── net_logic.py      # Core generation + solver logic
+├── main_ui.py        # Tkinter GUI implementation
+└── README.md
+```
+
+---
+
+# 🚀 Installation
+
+## Requirements
+
+* Python 3.8+
+* Tkinter (included in most Python distributions)
+
+## Run the Game
+
+```bash
+python main_ui.py
+```
+
+---
+
+# 🏆 Win Condition
+
+The puzzle is solved when:
+
+```python
+grid == solution
+```
+
+All tiles must match the generated solution state exactly.
+
+---
+
+# 🏗 Architecture Overview
+
+```
+NetGameLogic
+ ├── new_game()               → Procedural generation
+ ├── solve_with_tree_dp()     → Optimal solver
+ ├── rotate_direction()       → Bitwise rotation
+ ├── get_connected_cells()    → Connectivity check
+ └── check_win()              → Victory detection
+
+NetGameUI
+ ├── Canvas rendering
+ ├── Event handling (clicks)
+ ├── Animation loop
+ └── Menu + controls
+```
+
+---
+
+# 📈 Technical Highlights
+
+* Tree-based procedural generation
+* Bitwise state encoding
+* Graph traversal (DFS)
+* Memoized recursion (`lru_cache`)
+* Separation of concerns (Logic vs UI)
+* Real-time visual feedback
+
+---
+
+# 🛠 Potential Enhancements
+
+* ⏱ Add timer & scoring system
+* 🧩 Add daily challenge mode
+* 🎯 Implement hint system
+* 🌱 Add seed-based puzzle sharing
+* 🎨 Improve UI theme & animations
+* 🌍 Port to Pygame or Web (Canvas / React)
+* 🤖 Compare solver vs heuristic AI
+* 📊 Difficulty estimator using graph metrics
+
+---
+
+# 👤 Author
+
+Developed in Python using Tkinter
+Featuring a Tree Dynamic Programming solver.
+
+---
+
+# ⭐ Contributing
+
+Pull requests are welcome.
+For major changes, please open an issue first to discuss proposed improvements.
+
+---
