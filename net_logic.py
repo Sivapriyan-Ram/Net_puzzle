@@ -1,27 +1,10 @@
-"""
-NET Puzzle Game Logic - OPTIMIZED O(W×H) VERSION
-================================================
-Core algorithm design concepts demonstrated:
-- Greedy local search (hill-climbing)
-- Implicit adjacency list graph representation  
-- Iterative DFS traversal
-- Single-pass O(W×H) solver (500x speedup vs original)
-
-✅ DYNAMIC CELL SIZING: 11×11 fits perfectly! No cutoff.
-"""
-
 import random
 from enum import IntFlag
 from functools import lru_cache
 
 
 class Direction(IntFlag):
-    """
-    Bitmask flags for 4-directional pipe connections.
     
-    Space-efficient graph representation: each cell stores outgoing edges as bits.
-    Example: grid[y][x] = UP|RIGHT = 3 means connects north + east.
-    """
     NONE = 0
     UP = 1
     RIGHT = 2
@@ -31,7 +14,6 @@ class Direction(IntFlag):
 
 
 class TileType:
-    """Logical role of each tile in the grid."""
     BLANK = 0
     ENDPOINT = 1
     SERVER = 2
@@ -40,44 +22,24 @@ class TileType:
 
 
 class NetGameLogic:
-    """
-    Complete game logic engine using optimal time complexities.
-    
-    KEY ALGORITHMS:
-    1. new_game(): O(W×H) - DFS tree generation + random scrambling
-    2. greedy_solve_full(): O(W×H) - Single-pass greedy hill-climbing
-    3. get_connected_cells(): O(W×H) - DFS connected component
-    4. Rotations: O(1) per operation
-    
-    Graph: Undirected tree (no cycles), implicit adjacency via bitmasks.
-    
-    ✅ DYNAMIC CELL SIZE: Auto-scales for 3×3 to 13×13+ grids
-    """
 
     def __init__(self, width: int = 7, height: int = 7) -> None:
-        """
-        Initialize with grid dimensions and generate first puzzle.
-        Time: O(W×H)
         
-        ✅ DYNAMIC CELL SIZING - Fits ANY screen size!
-        """
         self.width = width
         self.height = height
         
-        # ========== RESPONSIVE CELL SIZE =========
         max_dim = max(width, height)
         if max_dim <= 5:
-            self.cell_size = 75   # Small grids: large cells
+            self.cell_size = 75  
         elif max_dim <= 7:
-            self.cell_size = 65   # Default: comfortable
+            self.cell_size = 65  
         elif max_dim <= 9:
-            self.cell_size = 55   # Medium: readable
+            self.cell_size = 55  
         elif max_dim <= 11:
-            self.cell_size = 40   # Large: fits screen perfectly
+            self.cell_size = 40   
         else:
-            self.cell_size = 32   # Huge grids: tiny but functional
+            self.cell_size = 32   
         
-        # Game state
         self.user_move_count = 0
         self.scrambled_state_for_greedy = None
         self.solving_animation_running = False
@@ -94,19 +56,15 @@ class NetGameLogic:
         self.new_game()
 
     def clone_grid(self, grid):
-        """O(W×H) deep copy of grid."""
+       
         return [[grid[y][x] for x in range(self.width)] for y in range(self.height)]
 
     def change_size(self, width: int, height: int) -> None:
-        """
-        Resize grid with DYNAMIC cell sizing + new puzzle.
-        ✅ Automatically adjusts cell_size for new dimensions!
-        """
+        
         self.width = width
         self.height = height
         self.server_pos = (width // 2, height // 2)
         
-        # ========== UPDATE CELL SIZE FOR NEW GRID =========
         max_dim = max(width, height)
         if max_dim <= 5:
             self.cell_size = 75
@@ -122,18 +80,7 @@ class NetGameLogic:
         self.new_game()
 
     def new_game(self) -> None:
-        """
-        Generate solvable puzzle using DFS spanning tree.
         
-        ALGORITHM:
-        1. Start at server, create 2-3 random branches
-        2. DFS: extend randomly until no unvisited neighbors
-        3. Classify tiles by degree (ENDPOINT=1, JUNCTION=2+)
-        4. Save solution, scramble non-server tiles randomly
-        
-        Time: O(W×H) - visits each cell at most once
-        Space: O(W×H) for grids
-        """
         self.user_move_count = 0
         self.solving_animation_running = False
 
@@ -141,7 +88,6 @@ class NetGameLogic:
         self.tile_types = [[TileType.BLANK for _ in range(self.width)] for _ in range(self.height)]
         self.solution = [[Direction.NONE for _ in range(self.width)] for _ in range(self.height)]
 
-        # Place server and generate tree (unchanged O(W×H))
         sx, sy = self.server_pos
         self.tile_types[sy][sx] = TileType.SERVER
 
@@ -184,7 +130,6 @@ class NetGameLogic:
             else:
                 stack.pop()
 
-        # Save solution and classify tiles
         for y in range(self.height):
             for x in range(self.width):
                 self.solution[y][x] = self.grid[y][x]
@@ -197,7 +142,6 @@ class NetGameLogic:
                     conn_count = bin(self.grid[y][x]).count('1')
                     self.tile_types[y][x] = TileType.ENDPOINT if conn_count == 1 else TileType.JUNCTION
 
-        # Scramble
         for y in range(self.height):
             for x in range(self.width):
                 if (x, y) != self.server_pos and self.grid[y][x] != Direction.NONE:
@@ -212,7 +156,7 @@ class NetGameLogic:
         self.greedy_step_count = 0
 
     def restart_game(self) -> None:
-        """Restore initial scrambled state. Time: O(W×H)"""
+        
         if not self.initial_scrambled_grid:
             return
         self.user_move_count = 0
@@ -226,7 +170,7 @@ class NetGameLogic:
    
 
     def solve_with_tree_dp(self,start_grid):
-        # Phase 1: Build adjacency from solution
+        
         adj = {(x, y): [] for y in range(self.height) for x in range(self.width)}
 
         for y in range(self.height):
@@ -257,7 +201,7 @@ class NetGameLogic:
             rotations = []
             state = current
             for i in range(4):
-                rotations.append((state, i))  # (rotated_state, clockwise_rotations)
+                rotations.append((state, i))  
                 state = self.rotate_direction(state)
 
             best_cost = float('inf')
@@ -267,31 +211,27 @@ class NetGameLogic:
                 if state != target:
                     continue
 
-                # cost for this tile is minimal rotations (clockwise or counter‑clockwise)
-                # we have rot_cw (0-3). Counter‑clockwise rotations = (4 - rot_cw) % 4.
+               
                 rot_ccw = (4 - rot_cw) % 4
                 tile_cost = min(rot_cw, rot_ccw)
 
                 total = tile_cost
 
-                # Divide: solve each child subtree
+                
                 for child in adj[node]:
                     if child == parent:
                         continue
                     child_cost, _ = solve_subtree(child, node)
                     total += child_cost
-
-                # Conquer: choose minimal total cost
+                    
                 if total < best_cost:
                     best_cost = total
-                    best_rotation = rot_cw  # store clockwise count; we'll decide direction later
+                    best_rotation = rot_cw  
 
             return best_cost, best_rotation
             
-        #Trigger recursion from root
         solve_subtree(root,None)
 
-        # Reconstruct moves (including direction choice)
         moves = []
 
         def collect_moves(node, parent):
@@ -300,9 +240,8 @@ class NetGameLogic:
             current = start_grid[y][x]
             target = self.solution[y][x]
 
-            # Determine actual direction to apply minimal rotations
             if current != target:
-                # Find minimal rotations (clockwise vs counter‑clockwise)
+            
                 cw = current
                 cw_cnt = 0
                 while cw != target and cw_cnt < 4:
@@ -328,17 +267,11 @@ class NetGameLogic:
         collect_moves(root, None)
         return moves
         
-    # ========== WRAPPER FOR UI COMPATIBILITY ==========
-    def greedy_solve_full(self, start_grid):
-        """
-        Wrapper that calls the true divide‑and‑conquer solver.
-        Kept for UI compatibility (the UI calls this name).
-        """
-        return self.solve_with_tree_dp(start_grid)
+    
         
 
     def rotate_direction(self, direction: Direction) -> Direction:
-        """O(1) 90° clockwise rotation."""
+        
         result = Direction.NONE
         if direction & Direction.UP:    result |= Direction.RIGHT
         if direction & Direction.RIGHT: result |= Direction.DOWN
@@ -347,7 +280,7 @@ class NetGameLogic:
         return result
 
     def rotate_direction_ccw(self, direction: Direction) -> Direction:
-        """O(1) 90° counter-clockwise rotation."""
+        
         result = Direction.NONE
         if direction & Direction.UP:    result |= Direction.LEFT
         if direction & Direction.LEFT:  result |= Direction.DOWN
@@ -356,7 +289,7 @@ class NetGameLogic:
         return result
 
     def left_rotate_at(self, x: int, y: int) -> bool:
-        """O(1) clockwise rotation + increment counter."""
+       
         if self.grid[y][x] == Direction.NONE:
             return False
         self.grid[y][x] = self.rotate_direction(self.grid[y][x])
@@ -372,7 +305,7 @@ class NetGameLogic:
         return True
 
     def check_win(self) -> bool:
-        """O(W×H) exact match check."""
+        
         for y in range(self.height):
             for x in range(self.width):
                 if self.grid[y][x] != self.solution[y][x]:
@@ -380,7 +313,7 @@ class NetGameLogic:
         return True
 
     def get_connected_cells(self):
-        """O(W×H) DFS traversal."""
+        
         connected = set()
         stack = [self.server_pos]
         connected.add(self.server_pos)
@@ -480,6 +413,7 @@ class NetGameLogic:
                     moves.append((x, y, 'ccw'))
         
         return moves"""
+
 
 
 
