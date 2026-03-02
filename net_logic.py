@@ -158,3 +158,36 @@ class NetGameLogic:
 
         self.initial_scrambled_grid = self.clone_grid(self.grid)
         self.solution_grid = solved_grid
+
+
+    def generate_tree_dc(self, x1: int, y1: int, x2: int, y2: int) -> None:
+        if x1 == x2 and y1 == y2:
+            return
+
+        width = x2 - x1 + 1
+        height = y2 - y1 + 1
+
+        if height == 1:
+            for x in range(x1, x2):
+                self._connect(x, y1, x + 1, y1)
+            return
+
+        if width == 1:
+            for y in range(y1, y2):
+                self._connect(x1, y, x1, y + 1)
+            return
+
+        if width >= height:
+            mid = x1 + width // 2
+            self.generate_tree_dc(x1, y1, mid - 1, y2)
+            self.generate_tree_dc(mid, y1, x2, y2)
+            y = self.random.randint(y1, y2)
+            self._connect(mid - 1, y, mid, y)
+        else:
+            mid = y1 + height // 2
+            self.generate_tree_dc(x1, y1, x2, mid - 1)
+            self.generate_tree_dc(x1, mid, x2, y2)
+            x = self.random.randint(x1, x2)
+            self._connect(x, mid - 1, x, mid)
+
+
