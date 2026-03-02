@@ -191,3 +191,23 @@ class NetGameLogic:
             self._connect(x, mid - 1, x, mid)
 
 
+    def _connect(self, x1: int, y1: int, x2: int, y2: int) -> None:
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if dx == 1:
+            self.grid[y1][x1] |= Direction.RIGHT
+            self.grid[y2][x2] |= Direction.LEFT
+        elif dx == -1:
+            self.grid[y1][x1] |= Direction.LEFT
+            self.grid[y2][x2] |= Direction.RIGHT
+        elif dy == 1:
+            self.grid[y1][x1] |= Direction.DOWN
+            self.grid[y2][x2] |= Direction.UP
+        elif dy == -1:
+            self.grid[y1][x1] |= Direction.UP
+            self.grid[y2][x2] |= Direction.DOWN
+
+        self.tree_edges.add(((x1, y1), (x2, y2)))
+        self.tree_edges.add(((x2, y2), (x1, y1)))
+
