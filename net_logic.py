@@ -207,7 +207,184 @@ class NetGameLogic:
         elif dy == -1:
             self.grid[y1][x1] |= Direction.UP
             self.grid[y2][x2] |= Direction.DOWN
+            self.tree_edges.add(((x1, y1), (x2, y2)))
+            self.tree_edges.add(((x2, y2), (x1, y1)))
+            
+    def rotate_direction(self, direction: Direction) -> Direction:
+        if direction == Direction.NONE:
+            return Direction.NONE
+            
+        result = Direction.NONE
+        if direction & Direction.UP:
+            result |= Direction.RIGHT
+        if direction & Direction.RIGHT:
+            result |= Direction.DOWN
+        if direction & Direction.DOWN:
+            result |= Direction.LEFT
+        if direction & Direction.LEFT:
+            result |= Direction.UP
+            
+        return result
 
-        self.tree_edges.add(((x1, y1), (x2, y2)))
-        self.tree_edges.add(((x2, y2), (x1, y1)))
+    def rotate_direction_ccw(self, direction: Direction) -> Direction:
+        if direction == Direction.NONE:
+            return Direction.NONE
+            
+        result = Direction.NONE
+        if direction & Direction.UP:
+            result |= Direction.LEFT
+        if direction & Direction.LEFT:
+            result |= Direction.DOWN
+        if direction & Direction.DOWN:
+            result |= Direction.RIGHT
+        if direction & Direction.RIGHT:
+            result |= Direction.UP
+            
+        return result
+
+    def left_rotate_at(self, x: int, y: int) -> bool:
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return False
+            
+        if (x, y) == self.server_pos:
+            return False
+            
+        self.grid[y][x] = self.rotate_direction(self.grid[y][x])
+        self.user_move_count += 1
+        
+        self.rotation_cache.pop((x, y), None)
+        return True
+
+    def right_rotate_at(self, x: int, y: int) -> bool:
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return False
+            
+        if (x, y) == self.server_pos:
+            return False
+            
+        self.grid[y][x] = self.rotate_direction_ccw(self.grid[y][x])
+        self.user_move_count += 1
+        
+        self.rotation_cache.pop((x, y), None)
+        return True
+
+    def apply_solve_move(self, x: int, y: int, direction: str, rotations: int) -> None:
+        for _ in range(rotations):
+            if direction == 'cw':
+                self.grid[y][x] = self.rotate_direction(self.grid[y][x])
+            else:
+                self.grid[y][x] = self.rotate_direction_ccw(self.grid[y][x])
+        
+        self.rotation_cache.pop((x, y), None)
+
+    def _build_tree_structure(self) -> Tuple[Dict, Dict]:
+        parent = {}
+        children = {}
+
+        visited = set()
+        queue = deque([self.server_pos])
+
+        parent[self.server_pos] = None
+        children[self.server_pos] = []
+        visited.add(self.server_pos)
+
+        while queue:
+            node = queue.popleft()
+
+            for neighbor in self.adjacency.get(node, []):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    parent[neighbor] = node
+                    children.setdefault(node, []).append(neighbor)
+                    children.setdefault(neighbor, [])
+                    queue.append(neighbor)
+
+        return parent, children
+
+    def solve_with_dc_dp(self) -> Optional[Dict]:
+        """
+        Hybrid Divide & Conquer + Dynamic Programming solver.
+        Splits children into groups, solves each group independently, then merges.
+        """
+        parent, children = self._build_tree_structure()
+        dp: Dict[Tuple[int, int], Dict[int, Dict]] = {}
+
+        def solve(node):
+            x, y = node
+            dp[node] = {}
+
+            rot_range = [0] if node == self.server_pos else range(4)
+
+            # Leaf node
+            if not children[node]:
+                for r in rot_range:
+                    dp[node][r] = {}
+                return dp[node]
+
+            # Solve children first (postorder)
+            for child in children[node]:
+                solve(child)
+
+            # Divide children into groups for DC approach
+            child_list = children[node]
+            mid = len(child_list) // 2
+            left_group = child_list[:mid]
+            right_group = child_list[mid:]
+
+            def process_group(group):
+                # Start with all rotations valid
+                valid = {r: {} for r in rot_range}
+
+                for child in group:
+                    new_valid = {}
+
+                    for r in valid:
+                        rotated_parent = self._get_rotated(x, y, r)
+
+                        found_rotation = None
+                        for child_r in dp[child]:
+                            rotated_child = self._get_rotated(
+                                child[0], child[1], child_r
+                            )
+
+                            if self._compatible_pair(
+                                rotated_parent, x, y,
+                                rotated_child, child[0], child[1]
+                            ):
+                                found_rotation = child_r
+                                break
+
+                        if found_rotation is not None:
+                            new_valid.setdefault(r, {}).update(valid[r])
+                            new_valid[r][child] = found_rotation
+
+                    valid = new_valid
+
+                    if not valid:
+                        break
+
+                return valid
+
+            # Process both groups independently (Divide phase)
+            left_valid = process_group(left_group)
+            right_valid = process_group(right_group)
+
+            # Merge results (Conquer phase)
+            for r in rot_range:
+                if r in left_valid and r in right_valid:
+                    merged = {}
+                    merged.update(left_valid[r])
+                    merged.update(right_valid[r])
+                    dp[node][r] = merged
+
+            return dp[node]
+
+        # Run solve starting at root
+        solve(self.server_pos)
+
+        if not dp[self.server_pos]:
+            return None
+
+        solution: Dict[Tuple[int, int], int] = {}
+
 
