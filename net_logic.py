@@ -331,7 +331,7 @@ class NetGameLogic:
             left_group = child_list[:mid]
             right_group = child_list[mid:]
 
-            def process_group(group):
+           def process_group(group):
                 # Start with all rotations valid
                 valid = {r: {} for r in rot_range}
 
@@ -386,5 +386,3 @@ class NetGameLogic:
             return None
 
         solution: Dict[Tuple[int, int], int] = {}
-
-
