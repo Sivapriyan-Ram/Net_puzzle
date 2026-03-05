@@ -779,3 +779,68 @@ class BacktrackingSolver:
         return False
     
 
+    def _count_total_edges(self, grid: List[List[Direction]]) -> int:
+        """Count total number of edges in the grid."""
+        total = 0
+        for y in range(self.height):
+            for x in range(self.width):
+                total += int(grid[y][x]).bit_count()
+        return total // 2
+    
+    def get_solution_moves(self, initial_grid: List[List[Direction]], 
+                          solved_grid: List[List[Direction]]) -> List[Tuple[int, int, int, str]]:
+        """
+        Calculate the rotations needed to transform initial to solved grid.
+        Returns list of (x, y, rotations, direction) tuples.
+        """
+        moves = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if (x, y) == self.server_pos:
+                    continue
+                    
+                initial = initial_grid[y][x]
+                solved = solved_grid[y][x]
+                
+                if initial == solved:
+                    continue
+                
+                # Find minimal rotations (try both directions)
+                cw_rotations = 0
+                current = initial
+                while current != solved and cw_rotations < 4:
+                    current = self._rotate_direction(current, 1)
+                    cw_rotations += 1
+                
+                ccw_rotations = 0
+                current = initial
+                while current != solved and ccw_rotations < 4:
+                    current = self._rotate_direction(current, 3)  # CCW = 3 CW steps
+                    ccw_rotations += 1
+                
+                if cw_rotations <= ccw_rotations and cw_rotations > 0:
+                    moves.append((x, y, cw_rotations, 'cw'))
+                elif ccw_rotations > 0:
+                    moves.append((x, y, ccw_rotations, 'ccw'))
+        
+        return moves
+    
+    def print_solution_stats(self):
+        """Print detailed solution statistics."""
+        print("\n=== Solver Statistics ===")
+        print(f"Grid size: {self.width}x{self.height}")
+        print(f"Memoization: {'ON' if self.use_memoization else 'OFF'}")
+        
+        if self.use_memoization:
+            total = self.cache_stats['hits'] + self.cache_stats['misses']
+            if total > 0:
+                hit_rate = (self.cache_stats['hits'] / total) * 100
+                print(f"Cache hits: {self.cache_stats['hits']}")
+                print(f"Cache misses: {self.cache_stats['misses']}")
+                print(f"Pruned branches: {self.cache_stats['pruned']}")
+                print(f"Hit rate: {hit_rate:.2f}%")
+                print(f"Cache size: {len(self.memo_cache)} entries")
+        
+        if self.best_partial_solution:
+            print(f"Best partial coverage: {self.best_coverage}/{self.width * self.height} cells")
+
