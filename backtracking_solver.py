@@ -570,3 +570,119 @@ class BacktrackingSolver:
             return False
         
         return True
+                          
+    def _creates_premature_isolation(self, grid: List[List[Direction]],
+                                     tiles: List[Tuple[int, int, int]],
+                                     index: int) -> bool:
+        """Check if current assignment creates a component that can't connect to server."""
+        
+        # Get assigned tiles
+        assigned = set()
+        for i in range(index + 1):
+            tx, ty, _ = tiles[i]
+            assigned.add((tx, ty))
+        
+        # Find all components among assigned tiles
+        visited = set()
+        components = []
+        
+        def dfs_component(start):
+            comp = set()
+            stack = [start]
+            visited.add(start)
+            comp.add(start)
+            
+            while stack:
+                cx, cy = stack.pop()
+                for dx, dy, out_dir, in_dir in self._direction_vectors:
+                    if grid[cy][cx] & out_dir:
+                        nx, ny = cx + dx, cy + dy
+                        if ((nx, ny) in assigned and (nx, ny) not in visited and
+                            grid[ny][nx] & in_dir):
+                            visited.add((nx, ny))
+                            comp.add((nx, ny))
+                            stack.append((nx, ny))
+            return comp
+        
+        for tile in assigned:
+            if tile not in visited:
+                comp = dfs_component(tile)
+                components.append(comp)
+        
+        # If more than one component and none contain server, we're doomed
+        server_connected = any(self.server_pos in comp for comp in components)
+        
+        if len(components) > 1 and not server_connected:
+            return True
+        
+        # Check if any component has no possibility to connect to others
+        for comp in components:
+            if self.server_pos in comp:
+                continue  # Server component is fine
+            
+            # Does this component have any potential connections to outside?
+            has_escape = False
+            for cx, cy in comp:
+                for dx, dy, out_dir, _ in self._direction_vectors:
+                    if grid[cy][cx] & out_dir:
+                        nx, ny = cx + dx, cy + dy
+                        if (0 <= nx < self.width and 0 <= ny < self.height and
+                            (nx, ny) not in assigned and (nx, ny) != self.server_pos):
+                            has_escape = True
+                            break
+                if has_escape:
+                    break
+            
+            if not has_escape:
+                return True  # Component is trapped
+        
+        return False
+    
+    def _violates_degree_constraints(self, grid: List[List[Direction]],
+                                     tiles: List[Tuple[int, int, int]],
+                                     index: int) -> bool:
+        """Check if any tile has impossible degree requirements."""
+        
+        # Get assigned tiles
+        assigned = set()
+        for i in range(index + 1):
+            tx, ty, _ = tiles[i]
+            assigned.add((tx, ty))
+        
+        # Check each assigned tile
+        for ax, ay in assigned:
+            current = grid[ay][ax]
+            current_connections = bin(int(current)).count("1")
+            
+            # Count already matched connections
+            matched = 0
+            for dx, dy, out_dir, in_dir in self._direction_vectors:
+                nx, ny = ax + dx, ay + dy
+                if (0 <= nx < self.width and 0 <= ny < self.height and
+                    (nx, ny) in assigned):
+                    if (current & out_dir) and (grid[ny][nx] & in_dir):
+                        matched += 1
+                    elif (current & out_dir) != (grid[ny][nx] & in_dir):
+                        # Mismatch already caught elsewhere
+                        pass
+            
+            # If we already have more matches than connections, impossible
+            if matched > current_connections:
+                return True
+            
+            # Check if we can possibly satisfy remaining connections
+            remaining = current_connections - matched
+            possible_future = 0
+            
+            for dx, dy, out_dir, in_dir in self._direction_vectors:
+                nx, ny = ax + dx, ay + dy
+                if (0 <= nx < self.width and 0 <= ny < self.height and
+                    (nx, ny) not in assigned and (nx, ny) != self.server_pos):
+                    # This could potentially connect in the future
+                    if current & out_dir:
+                        possible_future += 1
+            
+            if possible_future < remaining:
+                return True
+        
+        return False
