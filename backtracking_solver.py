@@ -416,4 +416,104 @@ class BacktrackingSolver:
         if signature:
             self.memo_cache[signature] = None
         return None
+     def _solve_heuristic_large(self, grid: List[List[Direction]],
+                               tiles: List[Tuple[int, int, int]]) -> Optional[List[List[Direction]]]:
+        """
+        Specialized solver for very large grids using additional heuristics.
+        """
+        # First try with memoization
+        result = self._backtrack(grid, tiles, 0)
+        
+        # If no solution found and we have a good partial solution,
+        # try to complete it with a different ordering
+        if result is None and self.best_partial_solution is not None:
+            print("Attempting to complete best partial solution...")
+            
+            # Reorder tiles based on current partial solution
+            new_tiles = []
+            for x, y, constraint in tiles:
+                if (x, y) in self._get_connected_cells(self.best_partial_solution):
+                    # Prioritize tiles connected to solution
+                    new_tiles.append((x, y, constraint + 100))
+                else:
+                    new_tiles.append((x, y, constraint))
+            
+            new_tiles.sort(key=lambda t: -t[2])
+            
+            # Try again with new ordering
+            self.memo_cache.clear()
+            result = self._backtrack(self.best_partial_solution, new_tiles, 0)
+        
+        return result
     
+    def _order_rotations(self, tile: Direction, grid: List[List[Direction]],
+                        x: int, y: int, tiles: List[Tuple[int, int, int]],
+                        index: int) -> List[int]:
+        """
+        Order rotations intelligently - try most promising first.
+        """
+        scores = []
+        
+        # Get assigned tiles up to current index
+        assigned = set()
+        for i in range(index):
+            tx, ty, _ = tiles[i]
+            assigned.add((tx, ty))
+        
+        for rot in range(4):
+            if rot == 0:
+                rotated = tile
+            else:
+                rotated = self._rotate_direction(tile, rot)
+            
+            score = 0
+            
+            # Check assigned neighbors
+            valid = True
+            for dx, dy, out_dir, in_dir in self._direction_vectors:
+                nx, ny = x + dx, y + dy
+                if (0 <= nx < self.width and 0 <= ny < self.height and
+                    (nx, ny) in assigned):
+                    # Must match existing connections
+                    neighbor = grid[ny][nx]
+                    if (rotated & out_dir) != (neighbor & in_dir):
+                        valid = False
+                        break
+                    elif rotated & out_dir:
+                        score += 20  # Good match with assigned neighbor
+            
+            if not valid:
+                scores.append((-100, rot))  # Invalid, will be pruned
+                continue
+            
+            # Check server adjacency
+            if (x + 1, y) == self.server_pos and (rotated & Direction.RIGHT):
+                score += 15
+            if (x - 1, y) == self.server_pos and (rotated & Direction.LEFT):
+                score += 15
+            if (x, y + 1) == self.server_pos and (rotated & Direction.DOWN):
+                score += 15
+            if (x, y - 1) == self.server_pos and (rotated & Direction.UP):
+                score += 15
+            
+            # Prefer rotations that minimize open connections (reduces branching)
+            open_connections = 0
+            for dx, dy, out_dir, _ in self._direction_vectors:
+                nx, ny = x + dx, y + dy
+                if (0 <= nx < self.width and 0 <= ny < self.height and
+                    (nx, ny) not in assigned and (nx, ny) != self.server_pos):
+                    if rotated & out_dir:
+                        open_connections += 1
+                        score -= 2  # Penalty for each open connection
+            
+            # Bonus for matching original orientation (if it worked well elsewhere)
+            if rot == 0 and open_connections <= 1:
+                score += 5
+            
+            scores.append((score, rot))
+        
+        # Sort by score descending, return rotations
+        scores.sort(reverse=True)
+        return [rot for score, rot in scores if score > -100]
+    
+
