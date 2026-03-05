@@ -686,3 +686,96 @@ class BacktrackingSolver:
                 return True
         
         return False
+
+    def _is_valid_solution(self, grid: List[List[Direction]]) -> bool:
+        """
+        Check if the complete grid is a valid solution.
+        """
+        # Quick checks first
+        total_cells = self.width * self.height
+        
+        # Check all tiles are connected to server
+        connected = self._get_connected_cells(grid)
+        if len(connected) != total_cells:
+            return False
+        
+        # Count total edges
+        total_edges = self._count_total_edges(grid)
+        
+        # Tree property: N nodes need N-1 edges
+        if total_edges != total_cells - 1:
+            return False
+        
+        # Check for cycles
+        if self._has_cycles(grid):
+            return False
+        
+        # Check all connections are matched
+        for y in range(self.height):
+            for x in range(self.width):
+                current = grid[y][x]
+                
+                for dx, dy, out_dir, in_dir in self._direction_vectors:
+                    if current & out_dir:
+                        nx, ny = x + dx, y + dy
+                        # Must be in bounds
+                        if not (0 <= nx < self.width and 0 <= ny < self.height):
+                            return False
+                        # Neighbor must have matching connection
+                        if not (grid[ny][nx] & in_dir):
+                            return False
+        
+        return True
+    
+    def _get_connected_cells(self, grid: List[List[Direction]]) -> Set[Tuple[int, int]]:
+        """BFS to find all cells connected to the server."""
+        connected = set()
+        stack = deque([self.server_pos])
+        connected.add(self.server_pos)
+        
+        while stack:
+            x, y = stack.popleft()
+            current = grid[y][x]
+            
+            for dx, dy, out_dir, in_dir in self._direction_vectors:
+                if current & out_dir:
+                    nx, ny = x + dx, y + dy
+                    if (0 <= nx < self.width and 0 <= ny < self.height and 
+                        grid[ny][nx] & in_dir and (nx, ny) not in connected):
+                        connected.add((nx, ny))
+                        stack.append((nx, ny))
+        
+        return connected
+    
+    def _has_cycles(self, grid: List[List[Direction]]) -> bool:
+        """DFS cycle detection."""
+        visited = set()
+        
+        def dfs(x: int, y: int, parent: Optional[Tuple[int, int]]) -> bool:
+            visited.add((x, y))
+            
+            for dx, dy, out_dir, in_dir in self._direction_vectors:
+                if grid[y][x] & out_dir:
+                    nx, ny = x + dx, y + dy
+                    
+                    if not (0 <= nx < self.width and 0 <= ny < self.height):
+                        continue
+                    
+                    if not (grid[ny][nx] & in_dir):
+                        continue
+                    
+                    if (nx, ny) not in visited:
+                        if dfs(nx, ny, (x, y)):
+                            return True
+                    elif (nx, ny) != parent:
+                        return True
+            
+            return False
+        
+        # Start DFS from server
+        if dfs(self.server_pos[0], self.server_pos[1], None):
+            return True
+        
+        return False
+    
+
