@@ -337,4 +337,83 @@ class BacktrackingSolver:
         
         elapsed = time.time() - self.start_time
         return elapsed > self.timeout
+
+    def _backtrack(self, grid: List[List[Direction]],
+                  tiles: List[Tuple[int, int, int]],
+                  index: int) -> Optional[List[List[Direction]]]:
+        """Core backtracking algorithm with memoization."""
+        
+        # Check timeout
+        if self._check_timeout():
+            print("Timeout reached")
+            return None
+        
+        # Generate signature for memoization
+        signature = self._get_state_signature(grid, tiles, index)
+        
+        # Check memo cache
+        if signature and signature in self.memo_cache:
+            self.cache_stats['hits'] += 1
+            cached = self.memo_cache[signature]
+            if cached is not None:
+                # Restore cached solution
+                for (x, y), val in cached.items():
+                    grid[y][x] = Direction(val)
+                return grid
+            return None
+        
+        if signature:
+            self.cache_stats['misses'] += 1
+        
+        # Base case: all tiles assigned
+        if index == len(tiles):
+            if self._is_valid_solution(grid):
+                # Cache the solution
+                if signature:
+                    solution_pattern = {}
+                    for x, y, _ in tiles:
+                        solution_pattern[(x, y)] = int(grid[y][x])
+                    self.memo_cache[signature] = solution_pattern
+                return grid
+            
+            # Update best partial solution for timeout cases
+            connected = len(self._get_connected_cells(grid))
+            if connected > self.best_coverage:
+                self.best_coverage = connected
+                self.best_partial_solution = [row[:] for row in grid]
+            
+            if signature:
+                self.memo_cache[signature] = None
+            return None
+        
+        x, y, _ = tiles[index]
+        original = grid[y][x]
+        original_val = int(original)
+        
+        # Try rotations in intelligent order
+        rotations = self._order_rotations(original, grid, x, y, tiles, index)
+        
+        for rotation in rotations:
+            if rotation > 0:
+                grid[y][x] = self._rotate_direction(grid[y][x], rotation)
+            
+            # Forward checking
+            if self._forward_check(grid, tiles, index):
+                result = self._backtrack(grid, tiles, index + 1)
+                if result is not None:
+                    # Cache success
+                    if signature:
+                        solution_pattern = {}
+                        for tx, ty, _ in tiles:
+                            solution_pattern[(tx, ty)] = int(grid[ty][tx])
+                        self.memo_cache[signature] = solution_pattern
+                    return result
+            
+            # Restore for next attempt
+            grid[y][x] = original
+        
+        # No solution from this state
+        if signature:
+            self.memo_cache[signature] = None
+        return None
     
