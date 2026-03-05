@@ -287,3 +287,54 @@ class BacktrackingSolver:
                 return False
         
         return True
+    def _get_connected_components(self, grid: List[List[Direction]],
+                                  tiles: List[Tuple[int, int, int]],
+                                  index: int) -> str:
+        """Identify connected components among assigned tiles."""
+        assigned = set()
+        for i in range(index):
+            x, y, _ = tiles[i]
+            assigned.add((x, y))
+        
+        if not assigned:
+            return "0"
+        
+        visited = set()
+        components = []
+        
+        def dfs_component(start):
+            component = []
+            stack = [start]
+            visited.add(start)
+            
+            while stack:
+                x, y = stack.pop()
+                component.append(f"{x},{y}")
+                
+                for dx, dy, out_dir, in_dir in self._direction_vectors:
+                    if grid[y][x] & out_dir:
+                        nx, ny = x + dx, y + dy
+                        if ((nx, ny) in assigned and (nx, ny) not in visited and
+                            grid[ny][nx] & in_dir):
+                            visited.add((nx, ny))
+                            stack.append((nx, ny))
+            
+            return component
+        
+        for tile in assigned:
+            if tile not in visited:
+                component = dfs_component(tile)
+                component.sort()
+                components.append("+".join(component))
+        
+        components.sort()
+        return "/".join(components)
+    
+    def _check_timeout(self) -> bool:
+        """Check if we've exceeded the timeout."""
+        if self.timeout is None:
+            return False
+        
+        elapsed = time.time() - self.start_time
+        return elapsed > self.timeout
+    
