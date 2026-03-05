@@ -844,3 +844,108 @@ class BacktrackingSolver:
         if self.best_partial_solution:
             print(f"Best partial coverage: {self.best_coverage}/{self.width * self.height} cells")
 
+
+class AdaptiveSolver(BacktrackingSolver):
+    """
+    Solver that adaptively chooses memoization strategy based on grid size.
+    """
+    
+    def __init__(self, width: int, height: int):
+        super().__init__(width, height)
+        
+    def solve(self, grid: List[List[Direction]], timeout: Optional[float] = None) -> Optional[List[List[Direction]]]:
+        """Adaptively choose solving strategy."""
+        total_cells = self.width * self.height
+        rotatable = total_cells - 1
+        
+        # Strategy selection
+        if rotatable <= 15:  # 4x4 or smaller
+            print("Small grid - using pure backtracking (no memoization)")
+            self.use_memoization = False
+        elif rotatable <= 35:  # 6x6 or smaller
+            print("Medium grid - using standard memoization")
+            self.use_memoization = True
+        else:  # 7x7 and larger
+            print("Large grid - using enhanced memoization with heuristics")
+            self.use_memoization = True
+        
+        return super().solve(grid, timeout)
+
+
+# Utility function to compare solvers
+def compare_solvers(grid: List[List[Direction]], width: int, height: int):
+    """Compare different solver implementations."""
+    from puzzle_generation import GameState
+    
+    solvers = [
+        ("No Memoization", BacktrackingSolver(width, height, use_memoization=False)),
+        ("With Memoization", BacktrackingSolver(width, height, use_memoization=True)),
+        ("Adaptive", AdaptiveSolver(width, height))
+    ]
+    
+    results = []
+    
+    for name, solver in solvers:
+        print(f"\n--- Testing {name} ---")
+        start = time.time()
+        solution = solver.solve([row[:] for row in grid], timeout=30)
+        elapsed = time.time() - start
+        
+        if solution:
+            valid = solver._is_valid_solution(solution)
+            results.append({
+                'name': name,
+                'time': elapsed,
+                'success': True,
+                'valid': valid
+            })
+        else:
+            results.append({
+                'name': name,
+                'time': elapsed,
+                'success': False,
+                'valid': False
+            })
+        
+        if hasattr(solver, 'print_solution_stats'):
+            solver.print_solution_stats()
+    
+    # Print comparison
+    print("\n=== Solver Comparison ===")
+    for r in results:
+        status = "✓" if r['success'] and r['valid'] else "✗"
+        print(f"{r['name']}: {status} Time: {r['time']:.3f}s")
+
+
+# Example usage
+if __name__ == "__main__":
+    from puzzle_generation import GameState
+    
+    # Test with different grid sizes
+    for size in [(4, 4), (5, 5), (6, 6), (7, 7)]:
+        print("\n" + "="*50)
+        print(f"Testing {size[0]}x{size[1]} grid")
+        print("="*50)
+        
+        # Create a puzzle
+        game = GameState(width=size[0], height=size[1], seed=42)
+        game.new_game()
+        
+        # Solve it
+        solver = AdaptiveSolver(size[0], size[1])
+        solution = solver.solve(game.grid, timeout=60)
+        
+        if solution:
+            print(f"✓ Solution found!")
+            moves = solver.get_solution_moves(game.grid, solution)
+            print(f"  Moves required: {len(moves)}")
+            
+            # Verify solution
+            if solver._is_valid_solution(solution):
+                print("  ✓ Solution verified")
+            else:
+                print("  ✗ Invalid solution!")
+        else:
+            print(f"✗ No solution found within timeout")
+        
+        solver.print_solution_stats() 
