@@ -517,3 +517,56 @@ class BacktrackingSolver:
         return [rot for score, rot in scores if score > -100]
     
 
+    def _forward_check(self, grid: List[List[Direction]],
+                      tiles: List[Tuple[int, int, int]],
+                      index: int) -> bool:
+        """
+        Forward checking with multiple pruning strategies.
+        """
+        x, y, _ = tiles[index]
+        current = grid[y][x]
+        
+        # Get assigned tiles
+        assigned = set()
+        for i in range(index + 1):
+            tx, ty, _ = tiles[i]
+            assigned.add((tx, ty))
+        
+        # Check each neighbor
+        for dx, dy, out_dir, in_dir in self._direction_vectors:
+            nx, ny = x + dx, y + dy
+            
+            # Check bounds
+            if not (0 <= nx < self.width and 0 <= ny < self.height):
+                if current & out_dir:
+                    self.cache_stats['pruned'] += 1
+                    return False  # Connection pointing out of bounds
+                continue
+            
+            # Skip server
+            if (nx, ny) == self.server_pos:
+                if current & out_dir:
+                    # Must match server's connection
+                    if not (grid[ny][nx] & in_dir):
+                        self.cache_stats['pruned'] += 1
+                        return False
+                continue
+            
+            # If neighbor is assigned, check consistency
+            if (nx, ny) in assigned:
+                neighbor = grid[ny][nx]
+                if (current & out_dir) != (neighbor & in_dir):
+                    self.cache_stats['pruned'] += 1
+                    return False
+        
+        # Check for isolated components
+        if self._creates_premature_isolation(grid, tiles, index):
+            self.cache_stats['pruned'] += 1
+            return False
+        
+        # Check for impossible degree constraints
+        if self._violates_degree_constraints(grid, tiles, index):
+            self.cache_stats['pruned'] += 1
+            return False
+        
+        return True
