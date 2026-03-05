@@ -13,7 +13,7 @@ A professional, fully playable **network-connection puzzle game** built with **P
 
 * 🎲 Procedural puzzle generation
 * 🔄 Interactive tile rotation
-* 🤖 Optimal auto-solver using **Tree Dynamic Programming**
+* 🤖 Optimal auto-solver using **Backtracking + memoization**
 * 🎞 Step-by-step animated solving
 * 📊 Real-time connectivity tracking
 
@@ -21,7 +21,8 @@ A professional, fully playable **network-connection puzzle game** built with **P
 
 ## 🎮 Game Preview
 
-![WhatsApp Image 2026-02-20 at 10 54 32 AM](https://github.com/user-attachments/assets/ebd00478-31a0-44fa-b387-c5e3c8102ffc)
+ ![WhatsApp Image 2026-03-05 at 11 21 54 PM](https://github.com/user-attachments/assets/f758d8ac-deb4-4173-ab00-a133ed47f25c)
+
 
 ---
 
@@ -41,8 +42,8 @@ A professional, fully playable **network-connection puzzle game** built with **P
 
 ## 🔧 Puzzle Generation
 
-1. A **server node** is placed at the center.
-2. A randomized DFS-like expansion generates a **tree structure**.
+1. An empty grid of size W × H.
+2. A Recursive Divide and Conquer to generate a **tree structure**.
 3. Each tile becomes:
 
    * `SERVER`
@@ -80,28 +81,17 @@ This allows:
 
 ---
 
-## 🤖 Solver – Tree Dynamic Programming
+## 🤖 Solver – BackTracking
 
 The solver:
 
-* Reconstructs adjacency from the solution tree
-* Recursively computes optimal rotations per subtree
-* Uses `lru_cache` for memoization
-* Minimizes total rotation cost
+1.	Tries all possible rotations (0°, 90°, 180°, 270°) for each tile.
+2.	Checks whether the current tile connections are valid with neighboring tiles.
+3.	If a configuration becomes invalid, the algorithm backtracks to the previous tile.
+4.	Recursively explores the next tile when a valid configuration is found.
+5.	Prunes invalid configurations early to reduce unnecessary computation.
+6.	Continues until the entire grid forms a valid connected network.
 
-It returns a move sequence like:
-
-```python
-[(x, y, "cw"), (x, y, "ccw"), ...]
-```
-
-### Why Tree-DP?
-
-Since the generated puzzle is a **tree**, each subtree can be solved independently, enabling:
-
-* Optimal minimal-rotation solutions
-* Efficient solving even on larger grids
-* Clean recursive structure
 
 ---
 
@@ -142,7 +132,8 @@ Larger grids:
 
 * **Active:** Connected tiles / Total tiles
 * **User Steps:** Player move count
-* **DC Steps:** Solver step count
+* **Solve Steps:** Solver step count
+* **Cycles:Yes/No** Cycle formation in puzzle
 
 Connected tiles are visually highlighted.
 
@@ -152,8 +143,9 @@ Connected tiles are visually highlighted.
 
 ```
 .
-├── net_logic.py      # Core generation + solver logic
-├── main_ui.py        # Tkinter GUI implementation
+├── backtracking_solver.py      # Solver logic
+├── puzzle_generation.py      # Puzzle generation logic
+├── net_game_ui.py        # Tkinter GUI implementation
 └── README.md
 ```
 
@@ -169,50 +161,21 @@ Connected tiles are visually highlighted.
 ## Run the Game
 
 ```bash
-python main_ui.py
-```
-
----
-
-# 🏆 Win Condition
-
-The puzzle is solved when:
-
-```python
-grid == solution
-```
-
-All tiles must match the generated solution state exactly.
-
----
-
-# 🏗 Architecture Overview
-
-```
-NetGameLogic
- ├── new_game()               → Procedural generation
- ├── solve_with_tree_dp()     → Optimal solver
- ├── rotate_direction()       → Bitwise rotation
- ├── get_connected_cells()    → Connectivity check
- └── check_win()              → Victory detection
-
-NetGameUI
- ├── Canvas rendering
- ├── Event handling (clicks)
- ├── Animation loop
- └── Menu + controls
+python net_game_ui.py
 ```
 
 ---
 
 # 📈 Technical Highlights
 
-* Tree-based procedural generation
-* Bitwise state encoding
-* Graph traversal (DFS)
-* Memoized recursion (`lru_cache`)
-* Separation of concerns (Logic vs UI)
-* Real-time visual feedback
+* *Graph theory* (tree structures and connectivity)
+* *Backtracking search algorithm*
+* *Depth-First Search (DFS)* for traversal and cycle detection
+* *Memoization / state caching* to avoid repeated states
+* *Bitwise state modeling* using directional flags
+* *Constraint checking and pruning* during search
+* *Puzzle scrambling and generation algorithms*
+* *Separation of game logic and puzzle solver modules*
 
 ---
 
@@ -232,7 +195,7 @@ NetGameUI
 # 👤 Author
 
 Developed in Python using Tkinter
-Featuring a Tree Dynamic Programming solver.
+Featuring a Backtracking solver.
 
 ---
 
